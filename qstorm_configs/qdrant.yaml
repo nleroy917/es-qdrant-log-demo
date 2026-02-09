@@ -4,7 +4,7 @@ provider:
   name: "qdrant-local"
   type: qdrant
   url: "http://localhost:6334"
-  index: "products"  # Collection name in Qdrant
+  index: "logs"  # Collection name in Qdrant
   # Optional API key authentication
   # credentials:
   #   type: api_key
