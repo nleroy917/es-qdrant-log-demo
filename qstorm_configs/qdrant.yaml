@@ -10,8 +10,10 @@ provider:
   #   type: api_key
   #   key: "your-api-key"
   vector_field: "dense"  # Vector field name (default: "vector")
+  text_field: "bm25"  # Text field for sparse retrieval (default: "message")
 
 benchmark:
+  mode: hybrid  # "dense", "sparse", or "hybrid"
   warmup_iterations: 10
   burst_size: 100
   concurrency: 10
