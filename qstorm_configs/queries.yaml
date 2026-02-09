@@ -1,0 +1,19 @@
+# Example queries file for qstorm
+# Each query will be embedded using the configured model at startup
+
+queries:
+  - "database connection pool exhausted"
+  - "circuit breaker tripped payment service"
+  - "memory allocation spike detected"
+  - "JWT token verification failed authentication"
+  - "disk usage threshold exceeded alert"
+  - "request timeout upstream service 30s"
+  - "garbage collection pause latency spike"
+  - "dead letter queue message backlog"
+  - "TLS certificate expiration handshake error"
+  - "container out of memory kill risk"
+  - "database replication lag detected"
+  - "API rate limit exceeded throttling"
+  - "cache consistency violation detected"
+  - "thread pool queue saturation warning"
+  - "DNS resolution timeout occurred"

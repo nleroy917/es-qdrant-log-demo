@@ -1,0 +1,84 @@
+services:
+  # elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-9.0.0}
+    container_name: elasticsearch
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ES_PASSWORD:-changeme}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=trial
+      - xpack.ml.use_auto_machine_memory_percent=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl --output /dev/null --silent --head --fail -u elastic:${ES_PASSWORD:-changeme} http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  # sets up kibana_system user password (required before kibana can connect)
+  kibana-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-9.0.0}
+    container_name: kibana-setup
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    command: >
+      bash -c '
+        echo "Setting kibana_system password...";
+        until curl -s -u "elastic:${ES_PASSWORD:-changeme}" -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"${ES_PASSWORD:-changeme}\"}" | grep -q "^{}"; do
+          sleep 2;
+        done;
+        echo "Done.";
+      '
+    profiles:
+      - debug
+
+  # kibana (optional - for debugging/visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ES_VERSION:-9.0.0}
+    container_name: kibana
+    depends_on:
+      kibana-setup:
+        condition: service_completed_successfully
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${ES_PASSWORD:-changeme}
+    profiles:
+      - debug
+
+  # qdrant vector database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  elasticsearch-data:
+  qdrant-data:
