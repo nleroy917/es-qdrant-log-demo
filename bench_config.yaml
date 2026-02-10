@@ -8,7 +8,7 @@ recovery_secs: 60           # post-write recovery measurement
 
 # paths
 emitter_dir: "./emitter"
-emitter_features: "qdrant,elasticsearch"
+emitter_features: "qdrant,elasticsearch,dashboard"
 qstorm_configs_dir: "./qstorm_configs"
 results_dir: "./results"
 

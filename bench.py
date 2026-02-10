@@ -37,7 +37,7 @@ class BenchConfig:
     heavy_write_secs: int = 120
     recovery_secs: int = 60
     emitter_dir: str = "./emitter"
-    emitter_features: str = "qdrant,elasticsearch"
+    emitter_features: str = "qdrant,elasticsearch,dashboard"
     qstorm_configs_dir: str = "./qstorm_configs"
     results_dir: str = "./results"
     backends: dict = field(default_factory=lambda: {
@@ -142,6 +142,9 @@ def wait_for_emitter(proc: subprocess.Popen, label: str, timeout: int) -> None:
     try:
         proc.wait(timeout=timeout)
         log.info("Emitter [%s] exited with code %d", label, proc.returncode)
+        if proc.returncode != 0:
+            stderr = proc.stderr.read().decode() if proc.stderr else ""
+            log.error("Emitter [%s] failed with stderr:\n%s", label, stderr)
     except subprocess.TimeoutExpired:
         log.warning("Emitter [%s] did not finish in time, terminating", label)
         proc.terminate()
