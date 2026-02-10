@@ -19,3 +19,7 @@ benchmark:
   concurrency: 10
   timeout_ms: 5000
   top_k: 10
+
+embedding:
+    model: "openai/text-embedding-3-small"
+    dimensions: 1536

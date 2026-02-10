@@ -118,6 +118,7 @@ def start_emitter(config: BenchConfig, duration_secs: int, env: dict) -> subproc
     """
     emitter_dir = Path(config.emitter_dir).resolve()
     cmd = [
+        "RUST_LOG=info",  # avoid debug-level noise
         "cargo", "run", "--release",
         "--features", config.emitter_features,
         "--", "--duration-secs", str(duration_secs),
@@ -236,7 +237,7 @@ def check_services_healthy() -> bool:
     return all_ok
 
 
-def run_benchmark(config: BenchConfig) -> None:
+def run_benchmark(config: BenchConfig, skip_load: bool = False) -> None:
     run_name = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     out_dir = Path(config.results_dir).resolve() / run_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -272,16 +273,20 @@ def run_benchmark(config: BenchConfig) -> None:
 
     # --- Phase 0: Pre-seed ---
     metadata.t_start = now_iso()
-    log.info(
-        "Phase 0: Pre-seeding ~%d logs (%ds at ~%.0f logs/s)...",
-        config.pre_seed_logs, seed_secs, total_rate,
-    )
-    emitter_seed = start_emitter(config, seed_secs, env)
-    wait_for_emitter(emitter_seed, "pre-seed", timeout=seed_secs + 60)
-    metadata.t_seed_done = now_iso()
+    if skip_load:
+        log.info("Phase 0: Skipping pre-seed (--skip-load)")
+        metadata.t_seed_done = metadata.t_start
+    else:
+        log.info(
+            "Phase 0: Pre-seeding ~%d logs (%ds at ~%.0f logs/s)...",
+            config.pre_seed_logs, seed_secs, total_rate,
+        )
+        emitter_seed = start_emitter(config, seed_secs, env)
+        wait_for_emitter(emitter_seed, "pre-seed", timeout=seed_secs + 60)
+        metadata.t_seed_done = now_iso()
 
-    log.info("Sleeping 5s for index settle...")
-    time.sleep(5)
+        log.info("Sleeping 5s for index settle...")
+        time.sleep(5)
 
     # --- Phase 1: Start qstorm ---
     log.info("Phase 1: Starting qstorm against all backends...")
@@ -361,6 +366,11 @@ def main():
         action="store_true",
         help="Print the plan and exit without running",
     )
+    parser.add_argument(
+        "--skip-load",
+        action="store_true",
+        help="Skip the pre-seed data loading phase (use when databases are already populated)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -386,7 +396,7 @@ def main():
         print(f"Backends:      {list(config.backends.keys())}")
         return
 
-    run_benchmark(config)
+    run_benchmark(config, skip_load=args.skip_load)
 
 
 if __name__ == "__main__":
