@@ -1,0 +1,22 @@
+# how many logs to insert before measuring
+pre_seed_logs: 100000
+
+# phase durations (seconds)
+steady_state_secs: 60       # baseline measurement without writes
+heavy_write_secs: 120       # duration of concurrent write load
+recovery_secs: 60           # post-write recovery measurement
+
+# paths
+emitter_dir: "./emitter"
+emitter_features: "qdrant,elasticsearch"
+qstorm_configs_dir: "./qstorm_configs"
+results_dir: "./results"
+
+# qstorm backends to test (run simultaneously)
+backends:
+  qdrant:
+    config: "qdrant.yaml"
+    queries: "queries.yaml"
+  elasticsearch:
+    config: "elastic.yaml"
+    queries: "queries.yaml"
