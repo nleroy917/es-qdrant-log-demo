@@ -59,7 +59,7 @@ def compute_seed_duration(emitter_dir: str, target_logs: int) -> int:
     config_path = Path(emitter_dir) / "config.yaml"
     with open(config_path) as f:
         raw = f.read()
-    # Crude parse — env vars won't affect rates, which are plain numbers
+    # crude parse — env vars won't affect rates, which are plain numbers
     cfg = yaml.safe_load(raw)
     total_rate = sum(s["rate_per_sec"] for s in cfg.get("services", []))
     if total_rate <= 0:
@@ -90,16 +90,14 @@ def now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-# ---------------------------------------------------------------------------
-# Process helpers
-# ---------------------------------------------------------------------------
-
-# Track active subprocesses for cleanup on Ctrl-C
+# track active subprocesses for cleanup on Ctrl-C
 _active_procs: list[subprocess.Popen] = []
 
 
 def _make_env() -> dict:
-    """Build subprocess environment: inherit current env + source .env file."""
+    """
+    Build subprocess environment: inherit current env + source .env file.
+    """
     env = os.environ.copy()
     env_file = Path(".env")
     if env_file.exists():
@@ -115,7 +113,9 @@ def _make_env() -> dict:
 
 
 def start_emitter(config: BenchConfig, duration_secs: int, env: dict) -> subprocess.Popen:
-    """Start the emitter process with a specific duration."""
+    """
+    Start the emitter process with a specific duration.
+    """
     emitter_dir = Path(config.emitter_dir).resolve()
     cmd = [
         "cargo", "run", "--release",
@@ -135,7 +135,9 @@ def start_emitter(config: BenchConfig, duration_secs: int, env: dict) -> subproc
 
 
 def wait_for_emitter(proc: subprocess.Popen, label: str, timeout: int) -> None:
-    """Wait for emitter to finish with a timeout."""
+    """
+    Wait for emitter to finish with a timeout.
+    """
     log.info("Waiting for emitter [%s] to finish (timeout=%ds)...", label, timeout)
     try:
         proc.wait(timeout=timeout)
@@ -159,7 +161,9 @@ def start_qstorm(
     output_file: Path,
     env: dict,
 ) -> subprocess.Popen:
-    """Start a qstorm process in headless mode, writing JSONL to output_file."""
+    """
+    Start a qstorm process in headless mode, writing JSONL to output_file.
+    """
     configs_dir = Path(config.qstorm_configs_dir).resolve()
     backend_cfg = config.backends[backend_name]
     config_path = str(configs_dir / backend_cfg["config"])
@@ -182,7 +186,9 @@ def start_qstorm(
 
 
 def stop_qstorm(proc: subprocess.Popen, backend_name: str) -> None:
-    """Gracefully stop a qstorm process."""
+    """
+    Gracefully stop a qstorm process.
+    """
     log.info("Stopping qstorm [%s] (pid=%d)...", backend_name, proc.pid)
     proc.terminate()
     try:
