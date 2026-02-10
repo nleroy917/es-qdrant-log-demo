@@ -1,0 +1,26 @@
+# qstorm configuration example for Qdrant
+
+provider:
+  name: "pgvector-local"
+  type: pgvector
+  url: "postgresql://postgres:changeme@localhost:5432"
+  index: "logs"  # Collection name in Qdrant
+  # Optional API key authentication
+  # credentials:
+  #   type: basic
+  #   username: ${PGVECTOR_USER}
+  #   password: ${PGVECTOR_PASSWORD}
+  vector_field: "embedding"  # Vector field name (default: "vector")
+  text_field: "message"  # Text field for sparse retrieval (default: "message")
+
+benchmark:
+  mode: vector  # "vector", "sparse", or "hybrid"
+  warmup_iterations: 10
+  burst_size: 100
+  concurrency: 10
+  timeout_ms: 5000
+  top_k: 10
+
+embedding:
+    model: "openai/text-embedding-3-small"
+    dimensions: 1536
