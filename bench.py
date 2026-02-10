@@ -118,7 +118,6 @@ def start_emitter(config: BenchConfig, duration_secs: int, env: dict) -> subproc
     """
     emitter_dir = Path(config.emitter_dir).resolve()
     cmd = [
-        "RUST_LOG=info",  # avoid debug-level noise
         "cargo", "run", "--release",
         "--features", config.emitter_features,
         "--", "--duration-secs", str(duration_secs),
