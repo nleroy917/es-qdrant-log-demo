@@ -96,7 +96,7 @@ for label, ts_str in phase_markers.items():
             line_width=1, line_dash='dash', line_color='#888888',
             annotation=dict(
                 text=label, font_size=9, font_color='#888888',
-                textangle=-90, yanchor='bottom',
+                textangle=-90, yanchor='top', yref='y domain', y=0.95,
             ) if row == 1 and col == 1 else None,
         )
 

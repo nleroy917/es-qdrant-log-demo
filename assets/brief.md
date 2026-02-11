@@ -65,20 +65,35 @@ The benchmark proceeds through three timed phases while query load runs continuo
 Prior to measurement, both databases are pre-seeded with 100,000 log entries to simulate a warm, populated index.
 
 ## Results
+<p align="center">
+  <img src="benchmark_results.pdf" alt="Figure 2: Benchmark results" width="100%"/>
+</p>
 
-<!-- TODO: Insert results figures and analysis here -->
 
-<!-- Suggested subsections:
-### Query Throughput (QPS)
+*Figure 2.* Benchmark results across three phases (steady-state, heavy-write, recovery) for Elasticsearch (red) and Qdrant (blue). **(a)** Query throughput on a log scale. **(b)** Mean query latency. **(c)** p95 tail latency. **(d)** p99 tail latency. Dashed lines indicate the start and end of the heavy-write phase.
+
+### Query Throughput
+
+During steady-state, Qdrant sustains ~200-300 queries/s while Elasticsearch operates at ~5 queries/s — roughly two orders of magnitude lower (Figure 2a). When heavy writes begin, Qdrant throughput dips modestly to ~50-100 queries/s before stabilizing, while Elasticsearch drops further to ~2-3 queries/s. Both systems recover toward baseline after writes stop, though Qdrant's recovery is faster and more complete.
+
 ### Mean Latency
-### Tail Latency (p95, p99)
+
+Under steady-state conditions, Qdrant mean latency holds below 5 ms, while Elasticsearch sits around 10-15 ms (Figure 2b). The onset of heavy writes causes Elasticsearch mean latency to spike sharply, peaking at ~270 ms — roughly a 20x increase over baseline. Qdrant mean latency rises modestly to ~30-40 ms during the write phase before returning to near-baseline levels. After writes cease, Elasticsearch latency decreases but remains elevated at ~50-100 ms well into the recovery window, suggesting lingering segment merge or refresh activity.
+
+### Tail Latency
+
+The tail latency picture is more pronounced. Elasticsearch p95 latency jumps from ~100 ms at baseline to ~900 ms under write load (Figure 2c), while p99 peaks at ~1,500 ms (Figure 2d). These spikes coincide with the onset of heavy writes and persist throughout the write phase. Qdrant tail latencies, by contrast, remain relatively contained: p95 stays under ~80 ms and p99 under ~200 ms during the write phase, with occasional spikes near the phase transition.
+
 ### Recovery Characteristics
--->
+
+A key differentiator is recovery behavior after writes stop. Qdrant returns to near-baseline latency within seconds of the write phase ending. Elasticsearch, however, exhibits a prolonged recovery tail — mean latency remains 5-10x above baseline for over a minute after writes cease, with p95 and p99 continuing to show elevated values. This asymmetric recovery profile is consistent with Lucene's background segment merging, which continues to compete for I/O resources after the write load subsides.
 
 ## Discussion
 
-<!-- TODO -->
+The results reveal a fundamental architectural difference in how these systems handle concurrent read and write workloads. Qdrant, designed from the ground up as a vector database, appears to decouple its indexing and query paths more effectively — write operations impose minimal overhead on in-flight queries. Elasticsearch, built on Apache Lucene, relies on periodic segment refreshes and background merges to incorporate new documents into the searchable index. These operations contend with query execution for CPU and I/O, explaining both the sharp latency degradation under load and the slow recovery after writes stop.
+
+It is worth noting several limitations of this study. First, the benchmark runs on a single node for each system; production deployments with sharding and replication may exhibit different contention patterns. Second, we use the default configuration for both systems without tuning refresh intervals, merge policies, or HNSW construction parameters — optimization could narrow the gap. Third, our write rate of ~83 logs/s is moderate by production standards; higher write rates would likely amplify the observed effects.
 
 ## Conclusion
 
-<!-- TODO -->
+For hybrid vector log search under write contention, Qdrant demonstrates substantially better query latency stability and faster recovery than Elasticsearch. Qdrant maintained sub-10 ms mean latency during steady-state and limited degradation to ~30-40 ms under heavy writes, while Elasticsearch mean latency spiked to ~270 ms with tail latencies exceeding 1 second. These findings suggest that purpose-built vector databases may be better suited for operational log search workloads where write contention is unavoidable and query latency SLAs are tight.
