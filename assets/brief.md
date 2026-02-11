@@ -66,7 +66,7 @@ Prior to measurement, both databases are pre-seeded with 100,000 log entries to 
 
 ## Results
 <p align="center">
-  <img src="benchmark_results.pdf" alt="Figure 2: Benchmark results" width="100%"/>
+  <img src="benchmark_results.svg" alt="Figure 2: Benchmark results" width="100%"/>
 </p>
 
 
