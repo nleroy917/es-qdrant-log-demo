@@ -143,3 +143,5 @@ for ann in fig.layout.annotations:
     ann.x = ann.x - 0.04
 
 fig.show()
+# save figure as svg
+fig.write_image(f'{RESULTS_DIR}/benchmark_results.pdf')
