@@ -144,4 +144,4 @@ for ann in fig.layout.annotations:
 
 fig.show()
 # save figure as svg
-fig.write_image(f'{RESULTS_DIR}/benchmark_results.pdf')
+fig.write_image(f'{RESULTS_DIR}/benchmark_results.svg')
