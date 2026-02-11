@@ -3,15 +3,10 @@
 provider:
   name: "pgvector-local"
   type: pgvector
-  url: "postgresql://postgres:changeme@localhost:5432"
-  index: "logs"  # Collection name in Qdrant
-  # Optional API key authentication
-  # credentials:
-  #   type: basic
-  #   username: ${PGVECTOR_USER}
-  #   password: ${PGVECTOR_PASSWORD}
-  vector_field: "embedding"  # Vector field name (default: "vector")
-  text_field: "message"  # Text field for sparse retrieval (default: "message")
+  url: "postgresql://postgres:postgres@localhost:5432/vectors"
+  table_name: "logs"
+  vector_field: "embedding"  # Vector column name (default: "embedding")
+  # text_field: "message"    # Text column for hybrid search (tsvector full-text)
 
 benchmark:
   mode: vector  # "vector", "sparse", or "hybrid"

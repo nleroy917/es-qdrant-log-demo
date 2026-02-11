@@ -4,13 +4,13 @@ provider:
   name: "elasticsearch-local"
   type: elasticsearch
   url: "http://localhost:9200"
-  index: "logs"
+  index_name: "logs"
   credentials:
     type: basic
     username: "elastic"
     password: "changeme"
-  vector_field: "dense"  # Field containing vectors in your index
-  text_field: "message"  # Field containing text for sparse retrieval
+  vector_field: "dense"   # dense_vector field name
+  text_field: "message"   # text field for BM25 (used in hybrid mode)
 
 benchmark:
   mode: hybrid               # "dense", "sparse", or "hybrid"

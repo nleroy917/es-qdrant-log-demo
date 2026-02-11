@@ -4,13 +4,10 @@ provider:
   name: "qdrant-local"
   type: qdrant
   url: "http://localhost:6334"
-  index: "logs"  # Collection name in Qdrant
-  # Optional API key authentication
-  # credentials:
-  #   type: api_key
-  #   key: "your-api-key"
-  vector_field: "dense"  # Vector field name (default: "vector")
-  text_field: "bm25"  # Text field for sparse retrieval (default: "message")
+  collection_name: "logs"  # Collection name in Qdrant
+  # api_key: "your-api-key"  # Optional API key authentication
+  vector_field: "dense"      # Named vector field (omit for default unnamed vector)
+  text_field: "bm25"       # BM25 sparse index name (required for hybrid mode)
 
 benchmark:
   mode: hybrid  # "dense", "sparse", or "hybrid"
