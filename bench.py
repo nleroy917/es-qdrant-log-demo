@@ -21,6 +21,7 @@ import platform
 import signal
 import subprocess
 import sys
+import threading
 import time
 
 from dataclasses import dataclass, field, asdict
@@ -80,8 +81,9 @@ class RunMetadata:
     t_start: str = ""
     t_seed_done: str = ""
     t_qstorm_start: str = ""
-    t_steady_end: str = ""       # = t_on
-    t_heavy_end: str = ""        # = t_off
+    t_steady_end: str = ""
+    t_heavy_start: str = ""      # actual write start (after embedding)
+    t_heavy_end: str = ""
     t_recovery_end: str = ""
     t_end: str = ""
 
@@ -110,6 +112,39 @@ def _make_env() -> dict:
             key, _, value = line.partition("=")
             env[key.strip()] = value.strip()
     return env
+
+
+class _StderrWatcher:
+    """
+    Drains process stderr in a background thread, recording a timestamp
+    when a marker string appears.  Takes ownership of proc.stderr so that
+    wait_for_emitter (which checks ``proc.stderr``) won't conflict.
+    """
+
+    def __init__(self, proc: subprocess.Popen, marker: str):
+        self.marker_time: str | None = None
+        self._lines: list[str] = []
+        stream = proc.stderr
+        proc.stderr = None  # prevent double-read in wait_for_emitter
+        self._thread = threading.Thread(
+            target=self._drain, args=(stream, marker), daemon=True,
+        )
+        self._thread.start()
+
+    def _drain(self, stream, marker: str) -> None:
+        for raw in stream:
+            line = raw.decode(errors="replace")
+            self._lines.append(line)
+            if self.marker_time is None and marker in line:
+                self.marker_time = now_iso()
+        stream.close()
+
+    def join(self, timeout: float = 10) -> None:
+        self._thread.join(timeout=timeout)
+
+    @property
+    def output(self) -> str:
+        return "".join(self._lines)
 
 
 def start_emitter(config: BenchConfig, duration_secs: int, env: dict) -> subprocess.Popen:
@@ -304,10 +339,16 @@ def run_benchmark(config: BenchConfig, skip_load: bool = False) -> None:
     # --- Phase 3+4: Heavy write ---
     log.info("Phase 3: Starting heavy write load (%ds)...", config.heavy_write_secs)
     emitter_heavy = start_emitter(config, config.heavy_write_secs, env)
+    watcher = _StderrWatcher(emitter_heavy, "Emitter running")
     log.info("Phase 4: Heavy write measurement in progress...")
     wait_for_emitter(emitter_heavy, "heavy-write", timeout=config.heavy_write_secs + 60)
+    watcher.join()
+    metadata.t_heavy_start = watcher.marker_time or metadata.t_steady_end
     metadata.t_heavy_end = now_iso()
-    log.info("Phase 5: Emitter stopped (t_off)")
+    log.info(
+        "Phase 5: Emitter stopped (t_off), write start detected at %s",
+        metadata.t_heavy_start,
+    )
 
     # --- Phase 6: Recovery ---
     log.info("Phase 6: Recovery measurement for %ds...", config.recovery_secs)

@@ -1,10 +1,13 @@
+import argparse
 import json
 
 import polars as pl
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-RESULTS_DIR = 'results/2026-02-10T15-33-09'
+parser = argparse.ArgumentParser(description='Analyze benchmark results')
+parser.add_argument('results_dir', help='Path to results directory (e.g. results/2026-02-11T08-17-00)')
+RESULTS_DIR = parser.parse_args().results_dir
 
 # NPG (Nature Publishing Group) palette
 COLORS = {
@@ -32,12 +35,17 @@ def load_backend(results_dir, name):
     return df
 
 
+# load metadata for phase boundaries
+with open(f'{RESULTS_DIR}/metadata.json') as f:
+    metadata = json.load(f)
+
 # load both backends and align to a common t=0
 backends = {
     'Elasticsearch': load_backend(RESULTS_DIR, 'elasticsearch'),
     'Qdrant': load_backend(RESULTS_DIR, 'qdrant'),
 }
-t0 = min(df['timestamp'].min() for df in backends.values())
+# use qstorm start as the common t=0 so phase lines align with data
+t0 = pl.Series([metadata['t_qstorm_start']]).str.to_datetime(time_zone='UTC')[0]
 for name in backends:
     backends[name] = backends[name].with_columns(
         ((pl.col('timestamp') - t0).dt.total_milliseconds() / 1000).alias('elapsed_s')
@@ -73,6 +81,24 @@ for name, df in backends.items():
             legendgroup=name,
             showlegend=(i == 0),
         ), row=row, col=col)
+
+# phase boundaries as vertical lines
+phase_markers = {
+    'Heavy write ON':  metadata.get('t_heavy_start') or metadata['t_steady_end'],
+    'Heavy write OFF': metadata['t_heavy_end'],
+}
+for label, ts_str in phase_markers.items():
+    ts = pl.Series([ts_str]).str.to_datetime(time_zone='UTC')[0]
+    x_sec = (ts - t0).total_seconds()
+    for row, col, _ in panels:
+        fig.add_vline(
+            x=x_sec, row=row, col=col,
+            line_width=1, line_dash='dash', line_color='#888888',
+            annotation=dict(
+                text=label, font_size=9, font_color='#888888',
+                textangle=-90, yanchor='bottom',
+            ) if row == 1 and col == 1 else None,
+        )
 
 # axis labels
 fig.update_yaxes(title_text='queries s<sup>-1</sup>', type='log', row=1, col=1)
