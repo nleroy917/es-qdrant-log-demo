@@ -3,10 +3,10 @@
 provider:
   name: "pgvector-local"
   type: pgvector
-  url: "postgresql://postgres:postgres@localhost:5432/vectors"
+  url: "postgresql://postgres:changeme@localhost:5432/postgres"
   table_name: "logs"
   vector_field: "embedding"  # Vector column name (default: "embedding")
-  # text_field: "message"    # Text column for hybrid search (tsvector full-text)
+  text_field: "message"    # Text column for hybrid search (tsvector full-text)
 
 benchmark:
   mode: vector  # "vector", "sparse", or "hybrid"
